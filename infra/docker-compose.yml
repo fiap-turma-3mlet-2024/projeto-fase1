@@ -6,8 +6,6 @@
 # This configuration supports basic configuration using environment variables or an .env file
 # The following variables are supported:
 #
-# AIRFLOW_IMAGE_NAME           - Docker image name used to run Airflow.
-#                                Default: apache/airflow:2.10.0
 # AIRFLOW_UID                  - User ID in Airflow containers
 #                                Default: 50000
 # AIRFLOW_PROJ_DIR             - Base path to which all the files will be volumed.
@@ -23,7 +21,10 @@
 ---
 x-airflow-common:
   &airflow-common
-  image: ${AIRFLOW_IMAGE_NAME}
+  build: 
+    context: ../source/airflow
+    dockerfile: Dockerfile
+  command: bash -c "pip install --no-cache-dir -r /requirements.txt"
   environment:
     &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
