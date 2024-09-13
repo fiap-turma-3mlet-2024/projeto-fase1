@@ -1,0 +1,87 @@
+openapi: 3.0.0
+info:
+  title: "Data extractor api"
+  version: "1.0.0"
+  contact:
+    name: Orlando Burli
+    email: orlando.burli@gmail.com
+    url: https://orlandoburli.com.br/
+tags:
+  - name: jobs
+    description: Jobs api
+paths:
+  /jobs:
+    post:
+      operationId: createJob
+      summary: Starts a job scrappy to collect data
+      tags: [jobs]
+      requestBody:
+        description: Job request data
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobRequest'
+      responses:
+        '201':
+          description: Job successfully created
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobCreationResponse'
+        '400':
+          description: Job creation failed - bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobErrorResponse'
+  /jobs/{id}:
+    get:
+      operationId: getJobStatus
+      summary: Return the status of the job
+      tags: [jobs]
+      responses:
+        '200':
+          description: Data found
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobGetResponse'
+        '404':
+          description: Job not found
+
+components:
+  schemas:
+    JobRequest:
+      type: object
+      properties:
+        yearStart:
+          type: integer
+          format: int64
+          example: 1970
+          description: First year to start the data collector
+        yearEnd:
+          type: integer
+          format: int64
+          example: 2022
+          description: Last year to start the data collector
+    JobCreationResponse:
+      type: object
+      properties:
+        id: 
+          type: integer
+          description: Job ID
+          example: 123456
+    JobErrorResponse:
+      type: object
+      properties:
+        reason:
+          type: string
+          description: Reason of the job failure
+          example: Start year and end year are mandatory
+    JobGetResponse:
+      type: object
+      properties:
+        status: 
+          type: string
+          description: Status of the job
+          example: In progress
