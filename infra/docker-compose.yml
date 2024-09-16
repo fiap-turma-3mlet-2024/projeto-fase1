@@ -243,5 +243,12 @@ services:
       airflow-init:
         condition: service_completed_successfully
 
+  api:
+    build: ../source/api/
+    volumes:
+      - ../source/api/app:/app
+    ports:
+      - "8000:8000"
+
 volumes:
   postgres-db-volume:
