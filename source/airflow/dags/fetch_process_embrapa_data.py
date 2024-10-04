@@ -3,13 +3,12 @@ from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
 import requests
 from bs4 import BeautifulSoup
-import pprint
 
 # Configurações da DAG
 default_args = {
   'owner': 'airflow',
   'depends_on_past': False,
-  'start_date': datetime(2024, 9, 30),  # Ajuste conforme necessário
+  'start_date': datetime(2024, 9, 30),
   'email_on_failure': False,
   'email_on_retry': False,
   'retries': 1,
@@ -21,7 +20,7 @@ with DAG(
   'fetch_process_embrapa_data',
   default_args=default_args,
   description='DAG para coletar e processar dados do site da Embrapa',
-  schedule_interval=timedelta(days=1),  # Define a frequência da execução
+  schedule_interval=None,
   catchup=False
 ) as dag:
 
@@ -46,8 +45,12 @@ with DAG(
 
   # Função para buscar o HTML do site da Embrapa
   def fetch_data_from_site(**context):
-    tab = context['params']['tab']
-    year = context['params']['year']
+    dag_run = context['dag_run']
+
+    # Pegando os parâmetros passados no momento da execução
+    tab = dag_run.conf.get('tab', 'processamento')
+    year = dag_run.conf.get('year', 2023)
+
     suboptions = SUBOPTIONS.get(tab) or [None]
 
     all_html_data = []
@@ -108,12 +111,13 @@ with DAG(
         "values": table_data
       })
 
+    return all_values
+
   # Tarefa 1: Buscar dados do site
   fetch_data_task = PythonOperator(
     task_id='fetch_data_from_site',
     python_callable=fetch_data_from_site,
-    provide_context=True,
-    params={ 'tab': 'processamento', 'year': 2023 }
+    provide_context=True
   )
 
   # Tarefa 2: Processar os dados
