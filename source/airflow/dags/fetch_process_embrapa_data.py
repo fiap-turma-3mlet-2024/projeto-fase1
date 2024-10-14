@@ -3,6 +3,7 @@ from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
 import requests
 from bs4 import BeautifulSoup
+import time
 
 # Configurações da DAG
 default_args = {
@@ -64,6 +65,7 @@ with DAG(
       response.raise_for_status()  # Lança erro se houver falha na requisição
       html_content = response.text
       all_html_data.append({'suboption': suboption, 'html': html_content})
+      time.sleep(1)
     
     # Passa os dados coletados para a próxima task usando XCom
     return all_html_data
