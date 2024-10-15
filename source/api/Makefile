@@ -5,8 +5,8 @@ help: ## Run this help
 
 .PHONY: run
 run: ## Build and run the project
-	docker run --rm -it -p 8081:8081 $(docker build -q .) 
+	docker run --rm -it -p 8081:8081 $$(docker build -q .) 
 
 
 dev: ## Run as dev, mapping the local folder to your machine
-	docker run --rm -it -p 8081:8081 $(docker build -q .) 
+	docker run --rm -it -p 8081:8081 $$(docker build -q .) 

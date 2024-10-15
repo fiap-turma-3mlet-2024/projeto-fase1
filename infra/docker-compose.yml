@@ -250,6 +250,7 @@ services:
       - ../source/api/app:/app
     ports:
       - "8000:8000"
+    restart: always
 
 volumes:
   postgres-db-volume:
