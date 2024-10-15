@@ -57,6 +57,7 @@ app = FastAPI()
 def read_root():
     return {"status": "OK"}
 
+
 @app.post("/jobs")
 def start_job(request: StartJobRequest):
     date_start = datetime.now()
@@ -93,3 +94,37 @@ def start_job(request: StartJobRequest):
         "status": "success",
         "results": results
     }
+
+
+@app.get("/jobs/{dag_run_id}")
+def get_job_status(dag_run_id: str):
+    response = requests.get(f'{airflow_url}/api/v1/dags/{dag_id}/dagRuns/{dag_run_id}', auth=(username, password))
+
+    if response.status_code == 200:
+        json_response = response.json()
+        print(json_response)
+        return {
+            "status": "success",
+            "result": {
+                "dag_run_id": json_response['dag_run_id'],
+                "status": json_response['state'],
+                "execution_date": json_response['execution_date'],
+                "start_date": json_response['start_date'],
+                "end_date": json_response['end_date'],
+                "note": json_response['note']
+            }
+        }
+    elif response.status_code == 404:
+        return {
+            "status": "error",
+            "message": "Dag run not found"
+        }
+    else:
+        return {
+            "status": "error",
+            "message": "Error while fetching dag run",
+            "result": {
+                "response": response.text,
+                "status_code": response.status_code
+            }
+        }
