@@ -1,3 +1,6 @@
+from os import getenv
+from typing import Literal
+
 from fastapi import FastAPI
 from pydantic import BaseModel, validator, Field, field_validator
 import requests
@@ -7,19 +10,30 @@ from datetime import datetime, timedelta
 
 from pydantic_core.core_schema import ValidationInfo
 
-dag_id = "fetch_process_embrapa_data"
-airflow_url = "http://airflow-webserver:8080"
+# Environment variables
+dag_id = getenv("AIRFLOW_DAG_ID")
+airflow_url = getenv("AIRFLOW_URL")
+username = getenv("AIRFLOW_USERNAME")
+password = getenv("AIRFLOW_PASSWORD")
 
+# Constants for date format
 date_format = "%Y-%m-%dT%H:%M:%SZ"
 date_format_dag_id = "%Y%m%d%H%M%S"
 
-username = "airflow"
-password = "airflow"
+TABS = {
+    "produção": "opt_02",
+    "processamento": "opt_03",
+    "comercialização": "opt_04",
+    "importação": "opt_05",
+    "exportação": "opt_06",
+    "publicação": "opt_07",
+}
 
+
+# Request body for job start
 class StartJobRequest(BaseModel):
     year_start: int = Field(..., ge=1990, description="The start year", alias="yearStart")
     year_end: int = Field(..., ge=1990, description="The end year", alias="yearEnd")
-    option: str = Field(..., description="Option tab")
 
     @field_validator('year_end')
     @classmethod
@@ -43,44 +57,38 @@ app = FastAPI()
 def read_root():
     return {"status": "OK"}
 
-
-# "produção": "opt_02",
-# "processamento": "opt_03",
-# "comercialização": "opt_04",
-# "importação": "opt_05",
-# "exportação": "opt_06",
-# "publicação": "opt_07",
-
 @app.post("/jobs")
 def start_job(request: StartJobRequest):
     date_start = datetime.now()
 
     results = []
-    
+
     for year in range(request.year_start, request.year_end + 1):
-        request_body = {
-            "dag_run_id": f"extract_run_{date_start.strftime(date_format_dag_id)}_{generate_secure_random_string(10)}",
-            "conf": {
-                "year": year,
-                "tab": request.option
-            },
-            "note": f"Extraction started through api, year {year}, option {request.option}"
-        }
-        
-        response = requests.post(f'{airflow_url}/api/v1/dags/{dag_id}/dagRuns', json=request_body, auth=(username, password))
-        
-        json_response = response.json()
-        
-        if response.status_code == 200:
-            results += [{
-                "dag_run_id": json_response['dag_run_id'],
-                "status": json_response['state'],
-                "params": {
+        for tab in TABS.keys():
+            request_body = {
+                "dag_run_id": f"extract_run_{date_start.strftime(date_format_dag_id)}_{generate_secure_random_string(10)}",
+                "conf": {
                     "year": year,
-                    "option": request.option
-                }
-            }]
-        
+                    "tab": tab
+                },
+                "note": f"Extraction started through api, year {year}, option {tab}"
+            }
+
+            response = requests.post(f'{airflow_url}/api/v1/dags/{dag_id}/dagRuns', json=request_body,
+                                     auth=(username, password))
+
+            json_response = response.json()
+
+            if response.status_code == 200:
+                results += [{
+                    "dag_run_id": json_response['dag_run_id'],
+                    "status": json_response['state'],
+                    "params": {
+                        "year": year,
+                        "tab": tab
+                    }
+                }]
+
     return {
         "status": "success",
         "results": results

@@ -250,6 +250,11 @@ services:
       - ../source/api/app:/app
     ports:
       - "8000:8000"
+    environment:
+      AIRFLOW_URL: "http://airflow-webserver:8080"
+      AIRFLOW_DAG_ID: "fetch_process_embrapa_data"
+      AIRFLOW_USERNAME: "airflow"
+      AIRFLOW_PASSWORD: "airflow"
     restart: always
 
 volumes:
