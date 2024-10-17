@@ -1,6 +1,7 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from datetime import datetime, timedelta
+from airflow.providers.mongo.hooks.mongo import MongoHook
+from datetime import timedelta
 import requests
 from bs4 import BeautifulSoup
 import time
@@ -9,7 +10,6 @@ import time
 default_args = {
   'owner': 'airflow',
   'depends_on_past': False,
-  'start_date': datetime(2024, 9, 30),
   'email_on_failure': False,
   'email_on_retry': False,
   'retries': 1,
@@ -20,7 +20,7 @@ default_args = {
 with DAG(
   'fetch_process_embrapa_data',
   default_args=default_args,
-  description='DAG para coletar e processar dados do site da Embrapa',
+  description='DAG para coletar, processar e armazenar dados do site da Embrapa',
   schedule_interval=None,
   catchup=False
 ) as dag:
@@ -115,6 +115,19 @@ with DAG(
 
     return all_values
 
+  def insert_data_to_mongo(**context):
+    all_values = context['ti'].xcom_pull(task_ids='process_data')
+
+    if all_values:
+      mongo_hook = MongoHook(conn_id='mongo_default')
+      mongo_client = mongo_hook.get_conn()
+
+      db = mongo_client['vitibrasil']
+      collection = db['vitivinicultura']
+      collection.insert_many(all_values)
+
+      mongo_client.close()
+
   # Tarefa 1: Buscar dados do site
   fetch_data_task = PythonOperator(
     task_id='fetch_data_from_site',
@@ -129,4 +142,11 @@ with DAG(
     provide_context=True
   )
 
-  fetch_data_task >> process_data_task
+  # Tarefa 3: Adicionar os dados no mongo
+  insert_data_to_mongo_task = PythonOperator(
+    task_id='insert_data_to_mongo',
+    python_callable=insert_data_to_mongo,
+    provide_context=True
+  )
+
+  fetch_data_task >> process_data_task >> insert_data_to_mongo_task
