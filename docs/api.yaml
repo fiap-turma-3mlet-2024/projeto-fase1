@@ -64,20 +64,57 @@ components:
           format: int64
           example: 2022
           description: Last year to start the data collector
+
     JobCreationResponse:
       type: object
       properties:
-        id: 
-          type: integer
-          description: Job ID
-          example: 123456
+        status:
+          type: string
+          description: Result of jobs creation
+        results:
+          type: array
+          description: List of results for multiple jobs created
+          items:
+            type: object
+            properties:
+              dag_run_id:
+                type: string
+                description: Job ID
+                example: 123456
+              status:
+                type: string
+                description: Status of the job/dag run
+              params:
+                type: object
+                description: Params used to create the job
+                properties:
+                  year:
+                    type: integer
+                    description: Year of data extraction
+                  option:
+                    type: string
+                    description: Option tag data used to start extraction
     JobErrorResponse:
       type: object
       properties:
-        reason:
-          type: string
-          description: Reason of the job failure
-          example: Start year and end year are mandatory
+        detail:
+          type: array
+          description: Details of the failure
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                description: Type of failure
+              log:
+                type: string
+                description: Location of the failure
+              msg:
+                type: string
+                description: Error message
+              input:
+                type: string
+                description: Input that triggers the error
     JobGetResponse:
       type: object
       properties:
